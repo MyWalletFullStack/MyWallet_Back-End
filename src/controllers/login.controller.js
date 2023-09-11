@@ -1,22 +1,16 @@
-import bcrypt from "bcrypt"
-import { v4 as uuid } from "uuid"
-import { db } from "../database/dataBase.js"
+import { usersService } from "../services/user.service.js"
+import httpStatus from "http-status"
 
 export async function newUser(req, res) {
     const { name, email, password } = req.body
 
-    if (!name || !email || !password) return res.status(422).send("Todos os campos são obrigatorios")
-
     try {
-        const unserOn = await db.collection("users").findOne({ email })
-        if (unserOn) return res.status(409).send("Email já cadastrado")
+        const user = await usersService.signUp(name, email, password)
 
-        const hash = bcrypt.hashSync(password, 10)
-        await db.collection("users").insertOne({ name, email, password: hash })
-
-        res.sendStatus(201)
+        res.status(httpStatus.CREATED).send(user)
     } catch (err) {
-        res.status(500).send(err.message)
+        if (err.name === 'Conflit') return res.status(httpStatus.CONFLICT).send(err.message)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err.message)
     }
 }
 
@@ -24,16 +18,10 @@ export async function login(req, res) {
     const { email, password } = req.body
 
     try {
-        const user = await db.collection("users").findOne({ email })
-        if (!user) return res.status(404).send("Email não encontrado")
+        const user = await usersService.signIn(email, password)
 
-        const senhaUser = bcrypt.compareSync(password, user.password)
-        if (!senhaUser) return res.status(401).send("Senha incorreta")
-
-        const token = uuid()
-        await db.collection("sessoes").insertOne({ token, idUser: user._id })
-        res.send(token)
+        res.status(httpStatus.OK).send(user)
     } catch (err) {
-        res.status(500).send(err.message)
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).send(err.message)
     }
 }

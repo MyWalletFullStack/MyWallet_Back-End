@@ -6,7 +6,7 @@ import { userSchema } from "../schemas/userSchema.js"
 
 const userRouter = Router()
 
-userRouter.post("/newUser", validarDados(userSchema), newUser)
+userRouter.post("/sign-up", validarDados(userSchema), newUser)
 
 userRouter.post("/sign-in", validarDados(userSchema), login)
 
